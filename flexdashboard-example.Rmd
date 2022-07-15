@@ -1,0 +1,445 @@
+---
+title: "School Performance"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    source_code: "https://github.com/jennhouchins/flexdashboard-dataproduct.git"
+    theme: 
+      version: 4
+      bootswatch: cerulean
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(flexdashboard)
+library(knitr)
+library(stringr)
+library(RColorBrewer)
+library(ggthemes)
+library(shiny)
+library(shinythemes)
+library(readr)
+library(tidyverse)
+library(DT)
+
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+spgdatafile <- here("data", "SPGData_processed.csv")
+    
+spg_data <- read_csv(spgdatafile) %>%
+    mutate(lea_name = as.factor(lea_name)) %>%
+    mutate(sbe_region = as.factor(sbe_region)) %>%
+    mutate(spg_grade = as.factor(spg_grade)) %>%
+    mutate(eg_status = as.factor(eg_status)) %>%
+    mutate(reporting_year = as.numeric(reporting_year)) %>% 
+    mutate(spg_score = as.numeric(spg_score)) %>% 
+    mutate(ach_score = as.numeric(ach_score)) %>% 
+    mutate(rdgs_ach_score = as.numeric(rdgs_ach_score)) %>%
+    mutate(mags_ach_score = as.numeric(mags_ach_score)) %>%
+    mutate(cgrs_score = as.numeric(cgrs_score))
+    
+arrange(spg_data, reporting_year, sbe_region)
+```
+
+
+```{css global, echo=FALSE}
+.chart-title {
+  font-weight: 600;
+}
+```
+About
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+###
+
+```{r picture, echo = F, fig.width = 2}
+knitr::include_graphics("img/NCflagimage.png")
+```
+
+### Welcome to the NC Public Schools Accountability and Testing Reports Dashboard 
+
+This application explores aggregate data collected and reported by the North Carolina Department of Public Instruction. These data include accountability reporting such as schools' performance scores, EVAAS scores and status, achievement scores, and 4-year cohort graduation rates.
+
+**The purpose of this dashboard is to allow users to ask the questions:**
+
+- What does school achievement look like in my region?
+- How are North Carolina schools performing across my region?
+
+Users of this dashboard should note that while data reported across multiple years is shown, yearly comparisons are not provided. This is due to reporting changes resulting from the Every Student Succeeds Act (ESSA). Therefore, care should be taken when drawing your own conclusions from the data presented. Context is provided when the dashboard designer has provided interpretations of the data for the user.
+
+Row
+-----------------------------------------------------------------------
+
+### **Target Audience**
+
+This dashboard is intended to inform education community stakeholders in the state of North Carolina, particularly parents, educators, administrators, and education policy makers. Due to the nature of this wide-ranging audience, the dashboard provides explanations for how the data used are calculated and/or reported to provide necessary context for interpretation.
+
+For more infomation on education in NC, please visit the link below: 
+
+[NC DPI Testing and School Accountability Data Sets and Reports](https://www.dpi.nc.gov/districts-schools/testing-and-school-accountability/school-accountability-and-reporting/accountability-data-sets-and-reports)
+
+
+### **Data Sources**
+
+The data used in this dashboard are the testing and accountability data sets collected and used to generate school accountability reports by the North Carolina Department of Public Instruction. The accountabilty data sets obtained from NC DPI consisted of accountability data for the academic years of 2014-2015 to 2018-2019.
+
+
+Regional Achievement
+=======================================================================
+Column {.sidebar}
+-----------------------------------------------------------------------
+### What Achievement Score Would You Like to Examine?
+
+```{r}
+selectInput("performanceYearSelect", label = "Reporting Year:",
+            choices = c(2015, 2016, 2017, 2018, 2019), selected = 2015)
+
+# selectInput("performanceRegionSelect",
+#             label = "Region:",
+#             choices = c("North Central" = "north central",
+#                         "Northeast" = "northeast",
+#                         "Northwest" = "northwest",
+#                         "Piedmont-Triad" = "piedmont triad",
+#                         "Sandhills" = "sandhills",
+#                         "Southeast" = "southeast",
+#                         "Southwest" = "southwest",
+#                         "Virtual" = "virtual",
+#                         "Western" = "western"),
+#             selected = "north central")
+
+
+selectInput("achievementScore",
+            label = "Score:",
+            choices = list("Reading Achievement" = "rdgs_ach_score",
+                           "Mathematics Achievement"="mags_ach_score",
+                           "Overall Achievement" = "ach_score"),
+            selected = "rdgs_ach_score")
+```
+
+Column 
+-----------------------------------------------------------------------
+
+### **How Do The Regions Compare?**
+
+```{r}
+renderPlot({
+  spg_data_singleyear = spg_data %>%
+      filter(
+          reporting_year == '2016' #input$reportingyearUpdate
+      )
+  ggplot(data = spg_data_singleyear, aes_string(x = spg_data_singleyear$sbe_region,
+                                                y = input$achievementScore,
+                                                fill=spg_data_singleyear$sbe_region)) +
+      geom_boxplot(show.legend = FALSE) +
+      theme_minimal() +
+      theme(axis.title.x = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.title.y = element_blank()) +
+      scale_fill_brewer(palette = "Spectral")
+
+})
+```
+
+School Performance
+=======================================================================
+Column {.sidebar}
+-----------------------------------------------------------------------
+### What Region Would You Like to Examine?
+
+```{r}
+selectInput("performanceYearSelect", label = "Reporting Year:",
+            choices = c(2015, 2016, 2017, 2018, 2019), selected = 2015)
+
+selectInput("performanceRegionSelect",
+            label = "Region:",
+            choices = c("North Central" = "north central",
+                        "Northeast" = "northeast",
+                        "Northwest" = "northwest",
+                        "Piedmont-Triad" = "piedmont triad",
+                        "Sandhills" = "sandhills",
+                        "Southeast" = "southeast",
+                        "Southwest" = "southwest",
+                        "Virtual" = "virtual",
+                        "Western" = "western"),
+            selected = "north central")
+
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### **Number of Schools** {.value-box}
+
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect
+            )
+        
+  schoolCount <- unique(filtereddata$school_name) %>%
+      length()
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-school",
+    color = "info"
+  )
+})
+```
+
+### **High Performing Schools** {.value-box}
+
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect,
+                spg_grade %in% c("A", "A+NG")
+            )
+        
+        schoolCount <- unique(filtereddata$school_name) %>%
+            length()
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-star",
+    color = "info"
+  )
+})
+```
+
+### **Low Performing Schools** {.value-box}
+
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect,
+                spg_grade == "F"
+            )
+        
+        schoolCount <- unique(filtereddata$school_name) %>%
+            length()
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-star-half",
+    color = "info"
+  )
+})
+```
+
+Row
+-----------------------------------------------------------------------
+### **Growth Not Met** {.value-box}
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect,
+                eg_status == "NotMet"
+            )
+        
+  schoolCount <- unique(filtereddata$school_name) %>%
+      length()
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-times",
+    color = "info"
+  )
+})
+```
+
+### **Growth Met** {.value-box}
+
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect,
+                eg_status == "Met"
+            )
+        
+  schoolCount <- unique(filtereddata$school_name) %>%
+      length() 
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-check",
+    color = "info"
+  )
+})
+```
+
+### **Growth Exceeded** {.value-box}
+
+```{r}
+
+renderValueBox({
+  filtereddata <- spg_data %>%
+            filter(
+                sbe_region == input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect,
+                eg_status == "Exceeded"
+            )
+        
+  schoolCount <- unique(filtereddata$school_name) %>%
+      length()
+  
+  valueBox(
+    value = schoolCount,
+    icon = "fa-check-double",
+    color = "info"
+  )
+})
+```
+
+Row
+-----------------------------------------------------------------------
+
+### **Distribution of School Performance Grades Across the Region**
+
+```{r}
+renderPlot({
+        spg_data %>%
+            filter(
+                sbe_region %in% input$performanceRegionSelect,
+                reporting_year == input$performanceYearSelect
+            ) %>%
+            ggplot() +
+            geom_bar(mapping = aes(x=spg_grade, fill=spg_grade)) +
+            theme_minimal() +
+            theme(panel.grid.major.x = element_blank(),
+                  axis.title.x = element_blank(),
+                  axis.text.x = element_blank(),
+                  axis.ticks.x = element_blank(),
+                  axis.title.y = element_blank(),
+                  axis.ticks.y = element_blank(),
+                  legend.position = "left") +
+            scale_fill_brewer(type = "qual", 
+                              palette = "Spectral", 
+                              direction = -1, 
+                              aesthetics = "fill", 
+                              guide = guide_legend(title = "School Grade")) 
+        
+    })
+```
+
+
+Data Browser
+=======================================================================
+Row {data-height=150}
+-----------------------------------------------------------------------
+### **How-to Information**
+
+You can use this data table to explore the school performance data on your own. The table allows for sorting and filtering the data by each column individually. Some things to note are provided below:
+
+- 80% of the weight of a school's performance score is based on testing results (e.g., end-of-grade, end-of-course, graduation rate, and college/workplace readiness measures).
+- 20% of the weight of the performaance is based on school growth as measured by SAS EVAAS (Education Value-Added Assessment System)
+- A performance grade of A+NG indicates a school earning an A designation with no significant achievement and/or graduation gaps.
+
+**WORD OF CAUTION**: The way in which accountability measures are reported changed starting in the 2017-2018 academic year as a result of the **Every Student Succeeds Act (ESSA)**. Therefore, school performance grades, growth results, and graduation rates are not comparable across all years.
+
+Row
+-----------------------------------------------------------------------
+### **School Performance Data**
+
+```{r}
+# set up tabular data for data browsing using datatable
+    tabularspg <- spg_data %>%
+        select(reporting_year,
+               lea_name,
+               school_name,
+               sbe_region,
+               spg_grade,
+               spg_score,
+               eg_score,
+               eg_status,
+               ach_score,
+               rdgs_ach_score,
+               mags_ach_score,
+               cgrs_score) %>%
+        mutate(sbe_region = str_to_title(sbe_region))
+    
+    # formatting to make the datatable easier to read and comprehend
+    # and setting table options
+    datatable(tabularspg, 
+              colnames = c("Year", #1
+                           "LEA", #2
+                           "School", #3
+                           "Region", #4
+                           "Grade", #5
+                           "Score", #6
+                           "EVAAS Score", #7
+                           "EVAAS Status", #8
+                           "Overall Achievement", #9
+                           "Reading Achievement", #10
+                           "Math Achievement", #11
+                           "4-year Cohort Graduation Rate"), #12
+              extensions = "Responsive",
+              style = 'bootstrap',
+              filter = "top",
+              fillContainer = getOption("DT.fillContainer", NULL),
+              rownames = FALSE,
+              options = list(
+                  columnDefs = list(list(className = 'dt-center', width = '200px', targets = c(1, 5, 6, 7)))
+              )
+    ) %>% 
+      formatRound(c(6,7,9,10,11,12), 1)
+```
+
+
+Project Info
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### **The Author**
+
+```{r headshot, echo = F, fig.width = 2}
+knitr::include_graphics("img/jenn.jpg")
+```
+
+### **Jennifer K. Houchins**
+
+
+**Jennifer K. Houchins** is the Director of Technology Programs at the Friday Institute for Educational Innovation at North Carolina State University. She engages collaboratively across all of the Friday Institute's project teams to provide technology expertise for projects as well as development and IT support for the organization's infrastructure and equipment. Her research interests and teaching focus on the integration of CS and computational thinking into the standard K-12 curriculum for both STEM and non-STEM disciplines.
+
+Row
+-----------------------------------------------------------------------
+### **The Project**
+
+This dashboard was developed as an example for the 2022 LASER Institute Summer Workshop. It is based on the author's final project for ECI 586 (Intro to Learning Analytics). It is designed to follow the Data-Intensive Research Workflow (Krumm, Means, & Bienkowski, 2018).
+
+
+If you would like to see the code for this project, you can download (or fork) it from the Github repository. The project employs the `flexdashboard` package.
+
+
+### **Project Limitations**
+
+Care has been taken to represent these data accurately while introducing as little designer bias as possible. Limited comparisons have been made due to the nature of the data and changes in the way measures are reported within the timeframe that these data span. Finally, some critics note that school report cards can have negative impacts. Please visit Public Schools First NC to see what critics have to say about school performance reporting.
+
+
+### **Project References**
+
+Krumm, A., Means, B., & Bienkowski, M. (2018). Learning analytics goes to school: A collaborative approach to improving education. Routledge.
+
+Antoszyk, E. (n.d.). School report cards. EducationNC. Retrieved November 22, 2020, from https://www.ednc.org/map/2015/06/school-report-cards/
+
+NC DPI: School Accountability and Reporting Page. (n.d.). Retrieved November 22, 2020, from https://www.dpi.nc.gov/districts-schools/testing-and-school-accountability/school-accountability-and-reporting/
