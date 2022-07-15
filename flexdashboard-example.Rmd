@@ -7,21 +7,18 @@ output:
     theme: 
       version: 4
       bootswatch: cerulean
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-library(here)
+
 library(flexdashboard)
 library(knitr)
 library(stringr)
-library(RColorBrewer)
-library(ggthemes)
 library(shiny)
-library(shinythemes)
 library(readr)
 library(tidyverse)
 library(DT)
+library(here)
 
 # load data in 'global' chunk so it can be shared by all users of the dashboard
 spgdatafile <- here("data", "SPGData_processed.csv")
@@ -58,7 +55,7 @@ Row
 knitr::include_graphics("img/NCflagimage.png")
 ```
 
-### Welcome to the NC Public Schools Accountability and Testing Reports Dashboard 
+### **WELCOME TO THE NC PUBLIC SCHOOLS ACCOUNTABILITY AND TESTING REPORTS DASHBOARD** 
 
 This application explores aggregate data collected and reported by the North Carolina Department of Public Instruction. These data include accountability reporting such as schools' performance scores, EVAAS scores and status, achievement scores, and 4-year cohort graduation rates.
 
@@ -93,21 +90,21 @@ Column {.sidebar}
 ### What Achievement Score Would You Like to Examine?
 
 ```{r}
-selectInput("performanceYearSelect", label = "Reporting Year:",
+selectInput("achievementYearSelect", label = "Reporting Year:",
             choices = c(2015, 2016, 2017, 2018, 2019), selected = 2015)
 
-# selectInput("performanceRegionSelect",
-#             label = "Region:",
-#             choices = c("North Central" = "north central",
-#                         "Northeast" = "northeast",
-#                         "Northwest" = "northwest",
-#                         "Piedmont-Triad" = "piedmont triad",
-#                         "Sandhills" = "sandhills",
-#                         "Southeast" = "southeast",
-#                         "Southwest" = "southwest",
-#                         "Virtual" = "virtual",
-#                         "Western" = "western"),
-#             selected = "north central")
+selectInput("achievementRegionSelect",
+            label = "Region:",
+            choices = c("North Central" = "north central",
+                        "Northeast" = "northeast",
+                        "Northwest" = "northwest",
+                        "Piedmont-Triad" = "piedmont triad",
+                        "Sandhills" = "sandhills",
+                        "Southeast" = "southeast",
+                        "Southwest" = "southwest",
+                        "Virtual" = "virtual",
+                        "Western" = "western"),
+            selected = "north central")
 
 
 selectInput("achievementScore",
@@ -120,7 +117,118 @@ selectInput("achievementScore",
 
 Column 
 -----------------------------------------------------------------------
+### **Regional Achievement at a Glance** 
 
+```{r}
+renderText({
+        score <- input$achievementScore
+        
+        if(score == 'rdgs_ach_score'){
+            scoreTitle <- "Reading Achievement"
+        } else if(score == 'mags_ach_score'){
+            scoreTitle <- "Mathematics Achievement"
+        } else {
+            scoreTitle <- "Overall Achievement"
+        }
+        
+        paste("The following snapshot shows the mean", 
+              scoreTitle, "for the year", input$achievementYearSelect, 
+              "and the change  from the previous year",
+              "where green represents an increase in mean score,",
+              "orange represent a decrease in the mean score,",
+              "and light blue represents either no change or a value of NA.")
+    })
+```
+
+Row 
+-----------------------------------------------------------------------
+### Regional Achievement Average {.value-box}
+
+```{r}
+renderValueBox({
+  score <- input$achievementScore
+        
+        if(score == 'rdgs_ach_score'){
+            scoreTitle <- "Reading Achievement"
+        } else if(score == 'mags_ach_score'){
+            scoreTitle <- "Mathematics Achievement"
+        } else {
+            scoreTitle <- "Overall Achievement"
+        }
+        
+        scoreAverage <- spg_data %>%
+            filter(
+                sbe_region == input$achievementRegionSelect,
+                reporting_year == input$achievementYearSelect
+            ) %>%
+            select(input$achievementScore) 
+        
+        scoreAverage <- mean(scoreAverage[[1]], na.rm = TRUE) %>%
+            round(2)
+        
+        
+    valueBox(
+      value = scoreAverage,
+      icon = "fa-percent",
+      color = "info"
+    )
+  
+})
+```
+
+
+### Change {.value-box}
+
+```{r}
+renderValueBox({
+  scoreAverage <- spg_data %>%
+        filter(
+            sbe_region == input$achievementRegionSelect,
+            reporting_year == input$achievementYearSelect
+        ) %>%
+        select(input$achievementScore)
+    
+    scoreAverage <- mean(scoreAverage[[1]], na.rm = TRUE)
+    
+    if (input$achievementYearSelect == 2015) {
+        meanDiff <- NA 
+    } else {
+        year = as.numeric(input$achievementYearSelect) - 1
+        prevAverage <- spg_data %>%
+            filter(
+                sbe_region == input$achievementRegionSelect,
+                reporting_year == year
+            ) %>%
+            select(input$achievementScore)
+        
+        prevAverage <- mean(prevAverage[[1]], na.rm = TRUE)
+        
+        meanDiff <- round(prevAverage - scoreAverage, 2)
+    }
+    
+    if (is.na(meanDiff) | meanDiff == 0){
+        fa_icon = "fa-minus"
+        diff_color = "primary"
+    } else if (meanDiff > 0) {
+        fa_icon = "fa-arrow-up"
+        diff_color = "success"
+    } else if (meanDiff < 0){
+        fa_icon = "fa-arrow-down"
+        diff_color = "warning"
+    }
+        
+        
+    valueBox(
+      value = abs(meanDiff),
+      icon = fa_icon,
+      color = diff_color
+    )
+  
+})
+```
+
+Row 
+-----------------------------------------------------------------------
 ### **How Do The Regions Compare?**
 
 ```{r}
@@ -309,6 +417,14 @@ renderValueBox({
 })
 ```
 
+Row {data-height=100}
+-----------------------------------------------------------------------
+
+### **Note** 
+```{r}
+renderText("High performing schools are classified as those schools receiving a grade of A or A+NG. Low performing schools are classified as those receiving a grade of F.")
+```
+
 Row
 -----------------------------------------------------------------------
 
@@ -343,7 +459,7 @@ renderPlot({
 
 Data Browser
 =======================================================================
-Row {data-height=150}
+Row {data-height=175}
 -----------------------------------------------------------------------
 ### **How-to Information**
 
