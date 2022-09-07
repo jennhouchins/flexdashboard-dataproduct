@@ -1,0 +1,13 @@
+name: flexdashboard-example
+title: flexdashboard-example
+username:
+account: jkhouchins
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6646879
+bundleId: 6279646
+url: https://jkhouchins.shinyapps.io/flexdashboard-example/
+when: 1662590652.98432
+lastSyncTime: 1662590652.98433
+asMultiple: FALSE
+asStatic: FALSE

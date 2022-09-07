@@ -1,13 +1,15 @@
 ---
 title: "School Performance"
-output: 
+output:
   flexdashboard::flex_dashboard:
     orientation: rows
     source_code: "https://github.com/jennhouchins/flexdashboard-dataproduct.git"
-    theme: 
+    theme:
       version: 4
       bootswatch: cerulean
 runtime: shiny
+resource_files:
+- data/SPGData_processed.csv
 ---
 
 ```{r setup, include=FALSE}
@@ -536,7 +538,11 @@ knitr::include_graphics("img/jenn.jpg")
 ### **Jennifer K. Houchins**
 
 
-**Jennifer K. Houchins** is the Director of Technology Programs at the Friday Institute for Educational Innovation at North Carolina State University. She engages collaboratively across all of the Friday Institute's project teams to provide technology expertise for projects as well as development and IT support for the organization's infrastructure and equipment. Her research interests and teaching focus on the integration of CS and computational thinking into the standard K-12 curriculum for both STEM and non-STEM disciplines.
+At the time this example dashboard was written, **Jennifer K. Houchins** was the Director of Technology Programs at the [Friday Institute for Educational Innovation](https://www.fi.ncsu.edu/) at [North Carolina State University](https://www.ncsu.edu/). Her research interests and teaching focus on the integration of CS and computational thinking into the standard K-12 curriculum for both STEM and non-STEM disciplines.
+
+Today, she is a Research Associate II in Learning and Technology at [WestEd](https://www.wested.org/). Her primary responsibilities include educational research and program evaluation for studies focused on computer science education. 
+
+Visit her website to learn more: https://jenniferkhouchins.com/
 
 Row
 -----------------------------------------------------------------------
@@ -545,12 +551,12 @@ Row
 This dashboard was developed as an example for the 2022 LASER Institute Summer Workshop. It is based on the author's final project for ECI 586 (Intro to Learning Analytics). It is designed to follow the Data-Intensive Research Workflow (Krumm, Means, & Bienkowski, 2018).
 
 
-If you would like to see the code for this project, you can download (or fork) it from the Github repository. The project employs the `flexdashboard` package.
+If you would like to see the code for this project, you can download (or fork) it from the [Github repository](https://github.com/jennhouchins/flexdashboard-dataproduct). The project employs the `flexdashboard` package.
 
 
 ### **Project Limitations**
 
-Care has been taken to represent these data accurately while introducing as little designer bias as possible. Limited comparisons have been made due to the nature of the data and changes in the way measures are reported within the timeframe that these data span. Finally, some critics note that school report cards can have negative impacts. Please visit Public Schools First NC to see what critics have to say about school performance reporting.
+Care has been taken to represent these data accurately while introducing as little designer bias as possible. Limited comparisons have been made due to the nature of the data and changes in the way measures are reported within the timeframe that these data span. Finally, some critics note that school report cards can have negative impacts. Please visit [Public Schools First NC](https://www.publicschoolsfirstnc.org/) to see what critics have to say about school performance reporting.
 
 
 ### **Project References**
